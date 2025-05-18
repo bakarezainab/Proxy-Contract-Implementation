@@ -1,66 +1,43 @@
-## Foundry
+# Transparent Proxy Pattern Implementation
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This repository contains a simplified implementation of the Transparent Proxy Pattern for upgradeable smart contracts on Ethereum.
 
-Foundry consists of:
+## Introduction to Proxy Patterns
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Smart contracts on Ethereum are immutable by design - once deployed, their code cannot be modified. While this immutability is a security feature, it creates challenges for fixing bugs, adding features, or adapting to changing requirements.
 
-## Documentation
+Proxy patterns solve this problem by separating a contract's state from its logic through two contracts:
+- **Proxy Contract**: Stores state and delegates calls to the implementation
+- **Implementation Contract**: Contains the logic but doesn't store state
 
-https://book.getfoundry.sh/
+This separation allows developers to deploy new implementation contracts while maintaining the state and address of the proxy contract.
 
-## Usage
+## The Transparent Proxy Pattern
 
-### Build
+### Overview
 
-```shell
-$ forge build
-```
+The Transparent Proxy Pattern, developed by OpenZeppelin, is one of the most widely adopted proxy patterns. It addresses the "function selector clash" problem that can occur in basic proxy implementations.
 
-### Test
+### Key Components
 
-```shell
-$ forge test
-```
+1. **Transparent Proxy**: Forwards calls to the implementation contract and includes logic to differentiate between admin and user calls
+2. **Implementation Contract**: Contains the business logic
+3. **ProxyAdmin**: A separate contract that handles administrative functions like upgrades
 
-### Format
+### How it Works
 
-```shell
-$ forge fmt
-```
+1. When a function call is made to the proxy:
+   - If the caller is an admin address and the function is an admin function (e.g., upgrade), the proxy executes the function directly
+   - Otherwise, the call is forwarded to the implementation contract
 
-### Gas Snapshots
+2. The proxy uses `delegatecall` to execute functions in the implementation contract, which allows the implementation's code to operate on the proxy's storage
 
-```shell
-$ forge snapshot
-```
+3. The admin functions are handled separately to avoid function selector clashes between admin functions and implementation functions
 
-### Anvil
+### Storage Layout
 
-```shell
-$ anvil
-```
+The proxy follows a specific storage layout defined in EIP-1967:
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+```solidity
+bytes32 private constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+bytes32 private constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
